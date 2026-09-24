@@ -1,0 +1,25 @@
+# {{ ansible_managed }}
+# Compliance profile: {{ compliance_profile }}
+# sshd uses the FIRST value it reads for each keyword, and drop-ins load
+# alphabetically, so "00-" wins over vendor files like 50-redhat.conf.
+PermitRootLogin no
+PermitEmptyPasswords no
+HostbasedAuthentication no
+IgnoreRhosts yes
+IgnoreUserKnownHosts yes
+PermitUserEnvironment no
+X11Forwarding no
+GSSAPIAuthentication no
+KerberosAuthentication no
+Compression no
+StrictModes yes
+PubkeyAuthentication yes
+UsePAM yes
+Banner /etc/issue
+LogLevel {{ ssh_hardening_log_level }}
+MaxAuthTries {{ ssh_hardening_max_auth_tries }}
+MaxSessions {{ ssh_hardening_max_sessions }}
+MaxStartups {{ ssh_hardening_max_startups }}
+LoginGraceTime {{ ssh_hardening_login_grace_time }}
+ClientAliveInterval {{ ssh_hardening_client_alive_interval }}
+ClientAliveCountMax {{ ssh_hardening_client_alive_count_max }}

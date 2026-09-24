@@ -1,0 +1,38 @@
+---
+- name: Deploy login banner for the selected profile
+  ansible.builtin.copy:
+    src: "{{ ssh_hardening_banner_file }}"
+    dest: /etc/issue
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Ensure sshd_config loads drop-in files
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^Include /etc/ssh/sshd_config\.d/\*\.conf'
+    line: Include /etc/ssh/sshd_config.d/*.conf
+    insertbefore: BOF
+    validate: /usr/bin/sshd -t -f %s
+  notify: Restart sshd
+
+- name: Deply sshd hardening drop-in
+  ansible.builtin.template:
+    src: 00-hardening.conf.j2
+    dest: "{{ ssh_hardening_dropin }}"
+    owner: root
+    group: root
+    mode: "0600"
+    validate: /usr/sbin/sshd -t -f %s
+  notify: Restart sshd
+
+- name: Restrict sshd_config permissions
+  ansible.builtin.file:
+    path: /etc/ssh/sshd_config
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Validate the full effective sshd configuration
+  ansible.builtin.command: /usr/sbin/sshd -t
+  changed_when: false

@@ -1,0 +1,6 @@
+---
+# DISA STIG (RHEL 9) values.
+# Role defaults hold settings shared by both standards; this file holds only what differs.
+ssh_hardening_banner_file: issue_stig
+ssh_hardening_client_alive_interval: 600
+ssh_hardening_client_alive_count_max: 1

@@ -1,0 +1,12 @@
+---
+# Settings shared by the STIG & CIS profiles. Values that differ are overidden by
+# vars/profiles/<profile>.yml
+ssh_hardening_banner_file: issue_stig
+ssh_hardening_client_alive_interval: 600
+ssh_hardening_client_count_max: 1
+ssh_hardening_log_level: VERBOSE
+ssh_hardening_max_auth_tries: 4
+ssh_hardening_max_sessions: 10
+ssh_hardening_max_startups: "10:30:60"
+ssh_hardening_login_grace_time: 60
+ssh_hardening_dropin: /etc/ssh/sshd_config.d/00-hardening.conf

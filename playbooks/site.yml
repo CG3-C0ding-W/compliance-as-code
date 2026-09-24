@@ -1,0 +1,24 @@
+---
+# Main hardening playbook
+- name: Apply compliance hardening
+  hosts: linux_servers
+
+  pre_tasks:
+    - name: Check the compliance profile is supported
+      ansible.builtin.assert:
+        that: compliance_profile in ['stig', 'cis']
+        fail_msg: "compliance_profile must be 'stig' or 'cis', got '{{ compliance_profile }}'"
+      tags: [always]
+
+    - name: Load values for the selected compliance profile
+      ansible.builtin.include_vars:
+        file: "{{ playbook_dir }}/../vars/profiles/{{ compliance_profile }}.yml"
+      tags: [always]
+
+  roles:
+    # - { role: file_permissions,  tags: [perms] }
+    # - { role: services_minimize, tags: [services] }
+    # - { role: kernel_sysctl,     tags: [sysctl] }
+    # - { role: login_policy,      tags: [login] }
+    # - { role: auditd,            tags: [audit] }
+    - { role: ssh_hardening, tags: [ssh] }
