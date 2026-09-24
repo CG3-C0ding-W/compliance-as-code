@@ -1,5 +1,7 @@
+# Lab: one Ubuntu control node + two Rocky Linux 9 targets on a VirtualBox host-only network.
+# Run from PowerShell in this folder:  vagrant up
 
-LAB_KEY = File.join(ENV[USERPROFILE] || Dir.home. ".ssh", "compliance_lab")
+LAB_KEY = File.join(ENV['USERPROFILE'] || Dir.home, ".ssh", "compliance_lab")
 abort "Lab SSH key not found at #{LAB_KEY}. Create it first (guide, Step 4)." unless File.exist?(LAB_KEY)
 
 TARGETS = { "rocky1" => "192.168.56.11", "rocky2" => "192.168.56.12" }.freeze
@@ -19,7 +21,7 @@ Vagrant.configure("2") do |config|
         end
         node.vm.provision "file", source: LAB_KEY,              destination: "/tmp/compliance_lab"
         node.vm.provision "file", source: "#{LAB_KEY}.pub",     destination: "/tmp/compliance_lab.pub"
-        node.vm.provision "shell", path: "lab/provision_control.sh"
+        node.vm.provision "shell", path: "provision_control.sh"
     end
     
     TARGETS.each do |name, ip|
@@ -33,7 +35,7 @@ Vagrant.configure("2") do |config|
                 vb.cpus     = 2
             end
             node.vm.provision "file", source: "#{LAB_KEY}.pub", destination: "/tmp/compliance_lab.pub"
-            node.vm.provision "shell", path: "lab/provision_target.sh"
+            node.vm.provision "shell", path: "provision_target.sh"
         end
     end
 end
