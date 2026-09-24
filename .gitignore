@@ -1,0 +1,7 @@
+
+.vagrant/
+collections/
+context/
+*.retry
+.vault_pass*
+.ansible/

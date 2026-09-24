@@ -1,0 +1,39 @@
+
+LAB_KEY = File.join(ENV[USERPROFILE] || Dir.home. ".ssh", "compliance_lab")
+abort "Lab SSH key not found at #{LAB_KEY}. Create it first (guide, Step 4)." unless File.exist?(LAB_KEY)
+
+TARGETS = { "rocky1" => "192.168.56.11", "rocky2" => "192.168.56.12" }.freeze
+
+Vagrant.configure("2") do |config| 
+
+    config.vm.synced_folder ".", "/vagrant", disabled: true
+
+    config.vm.define "control", primary: true do |node|
+        node.vm.box         = "bento/ubuntu-24.04"
+        node.vm.hostname    = "control"
+        node.vm.network "private_network", ip: "192.168.56.10"
+        node.vm.provider "virtualbox" do |vb| 
+            vb.name     = "control"
+            vb.memory   = 2048
+            vb.cpus     = 2
+        end
+        node.vm.provision "file", source: LAB_KEY,              destination: "/tmp/compliance_lab"
+        node.vm.provision "file", source: "#{LAB_KEY}.pub",     destination: "/tmp/compliance_lab.pub"
+        node.vm.provision "shell", path: "lab/provision_control.sh"
+    end
+    
+    TARGETS.each do |name, ip|
+        config.vm.define name do |node|
+            node.vm.box         = "rockylinux/9"
+            node.vm.hostname    = name
+            node.vm.network "private_network", ip: ip
+            node.vm.provider "virtualbox" do |vb| 
+                vb.name     = name
+                vb.memory   = 2048
+                vb.cpus     = 2
+            end
+            node.vm.provision "file", source: "#{LAB_KEY}.pub", destination: "/tmp/compliance_lab.pub"
+            node.vm.provision "shell", path: "lab/provision_target.sh"
+        end
+    end
+end

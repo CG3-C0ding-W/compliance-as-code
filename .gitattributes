@@ -1,0 +1,4 @@
+
+# Force Linux line endings -- CRLF breaks shell scripts and config templates on the VMs
+* text=auto eol=lf
+
