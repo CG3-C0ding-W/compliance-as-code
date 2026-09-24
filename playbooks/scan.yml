@@ -1,0 +1,99 @@
+---
+# OpenSCAP compliance scan against each host's compliance_profile found in host_vars
+# Run once before hardening, once after:
+#   ansible-playbook playbooks/scan.yml -e scan_label=baseline
+#   ansible-playbook playbooks/scan.yml -e scan_label=after
+# Reports should land in reports/<host>-<profile>-<label>.html
+- name: OpenSCAP compliance scan
+  hosts: linux_servers
+  vars:
+    scan_label: baseline
+    scap_profiles:
+      stig: xccdf_org.ssgproject.content_profile_stig
+      cis: xccdf_org.ssgproject.content_profile_cis_server_l1
+    scap_profile: "{{ scap_profiles[compliance_profile] }}"
+    remote_dir: /tmp/scap
+
+  tasks:
+    - name: Install OpenScap scanner and SCAP Security Guide
+      ansible.builtin.dnf:
+        name:
+          - openscap-scanner
+          - scap-security-guide
+        state: present
+
+    - name: Locate the SCAP datastream for this OS
+      ansible.builtin.find:
+        paths: /usr/share/xml/scap/ssg/content
+        patterns: "ssg-*9-ds.xml"
+      register: ds_files
+
+    - name: Fail clearly if no datastream was located
+      ansible.builtin.assert:
+        that: ds_files.files | length > 0
+        fail_msg: "No SCAP datastream found in the following: /usr/share/xml/scap/ssg/content"
+
+    - name: Set datastream path
+      ansible.builtin.set_fact:
+        scap_ds: >-
+          {{ (ds_files.files | map(attribute='path') | select('search', 'rl9') | list
+              + ds_files.files | map(attribute='path') | sort | list)[0] }}
+
+    - name: List profiles available in datastream
+      ansible.builtin.command: "oscap info --profiles {{ scap_ds }}"
+      register: profiles
+      changed_when: false
+
+    - name: Fail clearly if the requested profile is missing
+      ansible.builtin.assert:
+        that: scap_profile in profiles.stdout
+        fail_msg: >-
+          Profile {{ scap_profile }} not in {{ scap_ds }}. Available:
+          {{ profiles.stdout_lines }}. Rerun with -e scap_profile=<one of these>.
+
+    - name: Create scan output directory
+      ansible.builtin.file:
+        path: "{{ remote_dir }}"
+        state: directory
+        mode: "0700"
+
+    - name: Run the scan
+      ansible.builtin.command: >-
+        oscap xccdf eval
+        --profile {{ scap_profile }}
+        --results {{ remote_dir }}/{{ compliance_profile }}-{{ scan_label }}-results.xml
+        --report {{ remote_dir }}/{{ compliance_profile }}-{{ scan_label }}-report.html
+        {{ scap_ds }}
+      register: scan
+      changed_when: false
+      failed_when: scan.rc not in [0, 2]
+
+    - name: Read the scan results file
+      ansible.builtin.slurp:
+        src: "{{ remote_dir }}/{{ compliance_profile }}-{{ scan_label }}-results.xml"
+      register: results_xml
+
+    - name: Count passing and failing rules
+      ansible.builtin.set_fact:
+        n_pass: "{{ results_xml.content | b64decode | regex_findall('<(?:xccdf:)?result>pass</') | length }}"
+        n_fail: "{{ results_xml.content | b64decode | regex_findall('<(?:xccdf:)?result>fail</') | length }}"
+
+    - name: Fail clearly if no rule applies to the OS
+      ansible.builtin.assert:
+        that: (n_pass | int) + (n_fail | int) > 0
+        fail_msg: >-
+          0 applicable rules -- the datastream {{ scap_ds }} does not recognize this OS.
+          See Troubleshooting in the guide.
+
+    - name: Report pass rate
+      ansible.builtin.debug:
+        msg: >-
+          {{ inventory_hostname }} [{{ compliance_profile | upper }}] {{ scan_label }}:
+          {{ n_pass }} pass / {{ n_fail }} fail =
+          {{ ((n_pass | int * 100) / ((n_pass | int) + (n_fail | int))) | round(1) }}% compliant
+
+    - name: Fetch HTML report to control node
+      ansible.builtin.fetch:
+        src: "{{ remote_dir }}/{{ compliance_profile }}-{{ scan_label }}-report.html"
+        dest: "{{ playbook_dir }}/../reports/{{ inventory_hostname }}-{{ compliance_profile }}-{{ scan_label }}.html"
+        flat: true
