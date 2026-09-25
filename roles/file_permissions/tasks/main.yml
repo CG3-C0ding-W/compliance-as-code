@@ -1,0 +1,30 @@
+---
+- name: Set ownership and permissions on sensitive files
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ item.mode }}"
+  loop: "{{ file_permissions_files + file_permissions_profile_files }}"
+  loop_control:
+    label: "{{ item.path }} {{ item.mode }}"
+
+- name: Find files covered by permission-ceiling rules
+  ansible.builtin.find:
+    paths: "{{ item.paths }}"
+    patterns: "{{ item.patterns }}"
+    hidden: "{{ item.hidden }}"
+    file_type: file
+    recurse: false
+  loop: "{{ file_permissions_find_rules }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: file_permissions_found
+
+- name: Apply permission ceilings to the files found
+  ansible.builtin.file:
+    path: "{{ item.1.path }}"
+    mode: "{{ item.0.item.mode }}"
+  loop: "{{ file_permissions_found.results | subelements('files') }}"
+  loop_control:
+    label: "{{ item.1.path }} ({{ item.0.item.mode }})"

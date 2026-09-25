@@ -4,4 +4,5 @@ collections/
 context/
 *.retry
 .vault_pass*
-.ansible/
+.ansible/reports/*-results.xml
+Screenshots/

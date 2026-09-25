@@ -1,0 +1,12 @@
+---
+- name: Apply kernel and network hardening parameters per baseline scans
+  ansible.posix.sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    sysctl_file: "{{ kernel_sysctl_file }}"
+    state: present
+    sysctl_set: true
+    reload: true
+  loop: "{{ kernel_sysctl_settings | combine(kernel_sysctl_profile_settings) | dict2items }}"
+  loop_control:
+    label: "{{ item.key }} == {{ item.value }}"

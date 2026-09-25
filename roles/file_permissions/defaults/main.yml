@@ -1,0 +1,37 @@
+---
+# Settings shared by the STIG & CIS profiles. Values that differ are overidden by
+# vars/profiles/<profile>.yml
+file_permissions_files:
+  - { path: /etc/passwd, owner: root, group: root, mode: "0644" }
+  - { path: /etc/shadow, owner: root, group: root, mode: "0000" }
+  - { path: /etc/audit, owner: root, group: root, mode: "0600"}
+
+# User initialization files (dotfiles read at login).
+# Rule file_permission_user_init_files_root: mode 0740 or less permissive.
+# The symbolic mode only REMOVES permissions, so a stricter file is never loosened.
+file_permissions_find_rules:
+  - name: user init files (file_permission_user_init_files_root)
+    paths: [/root]
+    patterns: [".*"]
+    hidden: true
+    mode: "u-s,g-wxs,o="        # ceiling 0740
+
+  - name: SSH host private keys (file_permissions_sshd_private_key)
+    paths: [/etc/ssh]
+    patterns: ["ssh_host_*_key"]
+    hidden: false
+    mode: "u-xs,g-wxs,o="       # ceiling 0640
+
+  - name: audit config files (file_permissions_audit_configuration_stig)
+    paths: [/etc/audit]
+    patterns: ["audit*.rules", "audit*.conf"]
+    hidden: false
+    mode: "u-xs,g=,o="          # ceiling 0600
+
+  - name: audit rules.d files (file_permissions_audit_configuration_stig)
+    paths: [/etc/audit/rules.d]
+    patterns: ["*"]
+    hidden: false
+    mode: "u-xs,g=,o="
+
+file_permissions_profile_files: []

@@ -16,9 +16,9 @@
       tags: [always]
 
   roles:
-    # - { role: file_permissions,  tags: [perms] }
+    - { role: file_permissions, tags: [perms] }
     # - { role: services_minimize, tags: [services] }
-    # - { role: kernel_sysctl,     tags: [sysctl] }
+    - { role: kernel_sysctl, tags: [sysctl] }
     # - { role: login_policy,      tags: [login] }
     # - { role: auditd,            tags: [audit] }
     - { role: ssh_hardening, tags: [ssh] }

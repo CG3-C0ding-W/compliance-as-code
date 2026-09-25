@@ -1,0 +1,11 @@
+---
+galaxy_info:
+  author: your-name
+  description: Apply kernel and network sysctl hardening for DISA STIG or CIS on EL9
+  license: MIT
+  min_ansible_version: "2.16"
+  platforms:
+    - name: EL
+      versions:
+        - "9"
+dependencies: []

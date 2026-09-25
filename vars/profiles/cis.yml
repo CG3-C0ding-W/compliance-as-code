@@ -4,3 +4,13 @@
 ssh_hardening_banner_file: issue_cis
 ssh_hardening_client_alive_interval: 15
 ssh_hardening_client_alive_count_max: 3
+
+# CIS-only file permissions
+file_permissions_profile_files:
+  - { path: /etc/motd, owner: root, group: root, mode: "0644" }
+  - { path: /etc/crontab, owner: root, group: root, mode: "0600" }
+  - { path: /etc/cron.d, owner: root, group: root, mode: "0700" }
+  - { path: /etc/cron.hourly, owner: root, group: root, mode: "0700" }
+  - { path: /etc/cron.daily, owner: root, group: root, mode: "0700" }
+  - { path: /etc/cron.monthly, owner: root, group: root, mode: "0700" }
+  - { path: /etc/cron.weekly, owner: root, group: root, mode: "0700" }

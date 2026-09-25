@@ -1,0 +1,46 @@
+---
+# File the settings are written to. Loaded at boot by systemd-sysctl; the "99-"
+# prefix makes it load after vendor files in /usr/lib/sysctl.d, so these values win.
+kernel_sysctl_file: /etc/sysctl.d/99-hardening.conf
+
+# Settings shared by the STIG and CIS profiles.
+kernel_sysctl_settings:
+  # --- Kernel ---
+  kernel.randomize_va_space: 2
+  kernel.yama.ptrace_scope: 1
+
+  # --- IPv4: Host is not a router ---
+  net.ipv4.ip_forward: 0
+  net.ipv4.conf.all.send_redirects: 0
+  net.ipv4.conf.default.send_redirects: 0
+
+  # --- IPv4: ignore redirects and sourc-routed packets ---
+  net.ipv4.conf.all.accept_redirects: 0
+  net.ipv4.conf.default.accept_redirects: 0
+  net.ipv4.conf.all.secure_redirects: 0
+  net.ipv4.conf.default.secure_redirects: 0
+  net.ipv4.conf.all.accept_source_route: 0
+
+  # --- IPv4: spoofing protection and logging ---
+  net.ipv4.conf.all.rp_filter: 1
+  net.ipv4.conf.default.rp_filter: 1
+  net.ipv4.conf.all.log_martians: 1
+  net.ipv4.conf.default.log_martians: 1
+
+  # --- IPv4: ICMP and SYN flood protection ---
+  net.ipv4.icmp_echo_ignore_broadcasts: 1
+  net.ipv4.icmp_ignore_bogus_error_responses: 1
+  net.ipv4.tcp_syncookies: 1
+
+  # --- IPv6: not a router, ignore router advertisements and redirects ---
+  net.ipv6.conf.all.forwarding: 0
+  net.ipv6.conf.all.accept_ra: 0
+  net.ipv6.conf.default.accept_ra: 0
+  net.ipv6.conf.all.accept_redirects: 0
+  net.ipv6.conf.default.accept_redirects: 0
+  net.ipv6.conf.all.accept_source_route: 0
+  net.ipv6.conf.default.accept_source_route: 0
+
+# Profile-specific additions or overrides, set in vars/profiles/<profile>.yml.
+# Merged on top of kernel_sysctl_settings, so a profile only lists what differs.
+kernel_sysctl_profile_settings: {}
