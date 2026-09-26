@@ -4,3 +4,16 @@
 ssh_hardening_banner_file: issue_stig
 ssh_hardening_client_alive_interval: 600
 ssh_hardening_client_alive_count_max: 1
+
+services_minimize_profile_packages_removed:
+  - gssproxy
+  - iprutils
+  - tuned
+  - nfs-utils
+
+services_minimize_profile_services_disabled:
+  - kdump            # service_kdump_disabled
+  - debug-shell
+
+services_minimize_disable_ctrlaltdel_burst: true
+services_minimize_disable_ctrlaltdel_reboot: false

@@ -1,0 +1,31 @@
+---
+- name: Remove packages not permitted by the compliance profile
+  ansible.builtin.dnf:
+    name: "{{ services_minimize_packages_removed + services_minimize_profile_packages_removed }}"
+    state: absent
+  when: (services_minimize_packages_removed + services_minimize_profile_packages_removed) | length > 0
+
+- name: Stop/Diable/Mask services not permitted by compliance profile
+  ansible.builtin.systemd_service:
+    name: "{{ item }}"
+    state: stopped
+    enabled: false
+    masked: true
+  loop: "{{ services_minimize_services_disabled + services_minimize_profile_services_disabled }}"
+  loop_control:
+    label: "{{ item }}"
+
+- name: Disable the Ctrl-Alt-Del burst reboot
+  ansible.builtin.lineinfile:
+    path: /etc/systemd/system.conf
+    regexp: '^#?\s*CtrlAltDelBurstAction='
+    line: CtrlAltDelBurstAction=none
+  when: services_minimize_disable_ctrlaltdel_burst | bool
+  notify: Reexecute systemd
+
+- name: Disable Ctrl-Alt-Del Reboot Activation
+  ansible.builtin.systemd_service:
+    name: ctrl-alt-del.target
+    masked: true
+    state: stopped
+  when: services_minimize_disable_ctrlaltdel_reboot | bool

@@ -14,3 +14,9 @@ file_permissions_profile_files:
   - { path: /etc/cron.daily, owner: root, group: root, mode: "0700" }
   - { path: /etc/cron.monthly, owner: root, group: root, mode: "0700" }
   - { path: /etc/cron.weekly, owner: root, group: root, mode: "0700" }
+
+services_minimize_profile_services_disabled:
+  - nftables            # service_nftables_disabled
+  - bluetooth           # service_bluetooth_disabled
+  - rpcbind             # service_rpcbind_disabled
+  - nfs-server          # service_nfs_disabled

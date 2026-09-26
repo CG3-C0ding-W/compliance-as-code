@@ -1,0 +1,12 @@
+---
+# Settings shared by the STIG & CIS profiles. Values that differ are overidden by
+# vars/profiles/<profile>.yml
+
+services_minimize_packages_removed: []
+services_minimize_profile_packages_removed: []
+# Packages only one standard requires removed, set in vars/profiles/<profile>.yml.
+
+services_minimize_services_disabled: []
+services_minimize_profile_services_disabled: []
+services_minimize_disable_ctrlaltdel_burst: false
+services_minimize_disable_ctrlaltdel_reboot: false

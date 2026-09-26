@@ -1,7 +1,7 @@
 ---
 galaxy_info:
   author: CG3-C0DING
-  description: Harden OpenSSH server configuration to DISA STIG or CIS settings
+  description: Ensure services are compliant with CIS and STIG guidelines
   license: MIT
   min_ansible_version: "2.16"
   platforms:

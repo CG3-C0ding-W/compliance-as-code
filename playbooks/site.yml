@@ -17,7 +17,7 @@
 
   roles:
     - { role: file_permissions, tags: [perms] }
-    # - { role: services_minimize, tags: [services] }
+    - { role: services_minimize, tags: [services] }
     - { role: kernel_sysctl, tags: [sysctl] }
     # - { role: login_policy,      tags: [login] }
     # - { role: auditd,            tags: [audit] }
