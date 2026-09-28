@@ -1,0 +1,165 @@
+---
+- name: Check the current authselect profile
+  ansible.builtin.command: authselect current
+  register: login_policy_authselect_current
+  changed_when: false
+  failed_when: false
+
+- name: Select an authselect profile when none is configured
+  ansible.builtin.command: "authselect select {{ login_policy_authselect_profile }} --force"
+  when: login_policy_authselect_current.rc != 0
+  register: login_policy_authselect_select
+  changed_when: login_policy_authselect_select.rc == 0
+
+- name: Enable required authselect features
+  ansible.builtin.command: "authselect enable-feature {{ item }}"
+  loop: "{{ login_policy_authselect_features }}"
+  register: login_policy_authselect_enable
+  changed_when: "'is already enabled' not in login_policy_authselect_enable.stdout"
+
+# Enable faillock in the PAM stack
+- name: Enable faillock feature in authselect
+  ansible.builtin.command: authselect enable-feature with-faillock
+  register: login_policy_authselect
+  changed_when: "'already enabled' not in login_policy_authselect.stdout"
+
+# faillock.conf value settings (key = value)
+- name: Configure faillock value settings
+  ansible.builtin.lineinfile:
+    path: "{{ login_policy_faillock_file }}"
+    regexp: '^#?\s*{{ item.key }}\s*='
+    line: "{{ item.key }} = {{ item.value }}"
+    create: true
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ (login_policy_faillock_settings | combine(login_policy_faillock_profile_settings)) | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+
+# faillock.conf boolean flags (bare word on its own line)
+- name: Configure faillock boolean flags
+  ansible.builtin.lineinfile:
+    path: "{{ login_policy_faillock_file }}"
+    regexp: '^#?\s*{{ item }}\s*$'
+    line: "{{ item }}"
+    create: true
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ login_policy_faillock_flags }}"
+
+# pwquality.conf value settings (key = value)
+- name: Configure pwquality value settings
+  ansible.builtin.lineinfile:
+    path: "{{ login_policy_password_file }}"
+    regexp: '^#?\s*{{ item.key }}\s*='
+    line: "{{ item.key }} = {{ item.value }}"
+    create: true
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ (login_policy_password_settings | combine(login_policy_password_profile_settings)) | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+
+# pwquality.conf boolean flags
+- name: Configure pwquality boolean flags
+  ansible.builtin.lineinfile:
+    path: "{{ login_policy_password_file }}"
+    regexp: '^#?\s*{{ item }}\s*$'
+    line: "{{ item }}"
+    create: true
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ login_policy_password_flags }}"
+
+# login.defs settings
+- name: Configure login.defs settings
+  ansible.builtin.lineinfile:
+    path: "{{ login_policy_login_max_min_file }}"
+    regexp: '^#?\s*{{ item.key }}\s+'
+    line: "{{ item.key }}\t{{ item.value }}"
+  loop: "{{ login_policy_login_max_min_settings | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+
+# umask in shell init files (shell "umask NNN" line, not key=value)
+- name: Set umask in shell init files
+  ansible.builtin.replace:
+    path: "{{ item }}"
+    regexp: '^(\s*)umask\s+\d+'
+    replace: '\g<1>umask {{ login_policy_umask }}'
+  loop: "{{ login_policy_umask_shell_files }}"
+
+# Concurrent session limit (domain  type  item  value)
+- name: Limit concurrent login sessions
+  ansible.builtin.lineinfile:
+    path: "{{ login_policy_limits_file }}"
+    regexp: '^\*\s+hard\s+maxlogins'
+    line: "*    hard    maxlogins    {{ login_policy_maxlogins }}"
+    insertbefore: '^# End of file'
+
+# Apply password aging to accounts that ALREADY exist
+- name: Read existing accounts
+  ansible.builtin.getent:
+    database: passwd
+
+- name: Apply password aging to existing interactive accounts
+  ansible.builtin.user:
+    name: "{{ item.key }}"
+    password_expire_max: "{{ login_policy_login_max_min_settings.PASS_MAX_DAYS }}"
+    password_expire_min: "{{ login_policy_login_max_min_settings.PASS_MIN_DAYS }}"
+  loop: "{{ ansible_facts.getent_passwd | dict2items }}"
+  when: >-
+    (item.value.1 | int >= 1000 and item.value.1 | int <= 60000)
+    or item.key == 'root'
+  loop_control:
+    label: "{{ item.key }}"
+
+- name: Enable pwhistory in the PAM stack (authselect)
+  ansible.builtin.command: authselect enable-feature with-pwhistory
+  register: login_policy_pwhistory_authselect
+  changed_when: "'already enabled' not in login_policy_pwhistory_authselect.stdout"
+
+- name: Configure pwhistory value settings
+  ansible.builtin.lineinfile:
+    path: "{{ login_policy_pwhistory_file }}"
+    regexp: '^#?\s*{{ item.key }}\s*='
+    line: "{{ item.key }} = {{ item.value }}"
+    create: true
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ (login_policy_pwhistory_settings | combine(login_policy_pwhistory_profile_settings)) | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+
+- name: Configure pwhistory boolean flags
+  ansible.builtin.lineinfile:
+    path: "{{ login_policy_pwhistory_file }}"
+    regexp: '^#?\s*{{ item }}\s*$'
+    line: "{{ item }}"
+    create: true
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ login_policy_pwhistory_flags }}"
+
+- name: Reset any future-dated last password change to today
+  ansible.builtin.shell: |
+    set -o pipefail
+    changed=0
+    now=$(date +%s)
+    for u in $(awk -F: '($3>=1000 && $3<=60000)||$1=="root"{print $1}' /etc/passwd); do
+      lc=$(chage -l "$u" | awk -F': ' '/Last password change/{print $2}')
+      [ "$lc" = "never" ] && continue
+      if [ "$(date -d "$lc" +%s 2>/dev/null)" -gt "$now" ]; then
+        chage -d "$(date +%F)" "$u"
+        changed=1
+      fi
+    done
+    echo "changed=${changed}"
+  register: login_policy_pwlastchange
+  changed_when: "'changed=1' in login_policy_pwlastchange.stdout"

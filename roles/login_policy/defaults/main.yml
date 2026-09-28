@@ -1,0 +1,69 @@
+---
+# /etc/security/faillock.conf — account lockout policy.
+# /etc/security/pwquality.conf - account password policy
+# /etc/login.defs - account maximum/minimum policies
+# /etc/pam.d/password-auth - account passwqord auth policies
+# /etc/pam.d/system-auth - account passwqord auth policies
+
+login_policy_faillock_file: /etc/security/faillock.conf      # key = value + bare flags
+login_policy_password_file: /etc/security/pwquality.conf     # key = value + bare flags
+login_policy_login_max_min_file: /etc/login.defs             # KEY VALUE
+login_policy_limits_file: /etc/security/limits.conf          # domain type item value
+login_policy_umask_shell_files:                              # shell "umask NNN" lines
+  - /etc/profile
+  - /etc/bashrc
+login_policy_pwhistory_file: /etc/security/pwhistory.conf
+
+# Keys that take a value
+login_policy_faillock_settings:
+  deny: 3 # accounts_passwords_pam_faillock_deny
+  fail_interval: 900 # accounts_passwords_pam_faillock_interval
+  unlock_time: 0 # accounts_passwords_pam_faillock_unlock_time
+  dir: /var/log/faillock # accounts_passwords_pam_faillock_dir
+login_policy_faillock_profile_settings: {}
+
+# faillock.conf boolean flags
+login_policy_faillock_flags:
+  - audit             # accounts_passwords_pam_faillock_audit
+  - even_deny_root    # accounts_passwords_pam_faillock_deny_root
+
+login_policy_password_settings:
+  dcredit: -1 # accounts_password_pam_dcredit
+  ocredit: -1 # accounts_password_pam_ocredit
+  ucredit: -1 # accounts_password_pam_ucredit
+  lcredit: -1 # accounts_password_pam_lcredit
+  dictcheck: 1 # accounts_password_pam_dictcheck
+  difok: 8 # accounts_password_pam_difok
+  maxclassrepeat: 4 # accounts_password_pam_maxclassrepeat
+  maxrepeat: 3 # accounts_password_pam_maxrepeat
+  maxsequence: 4
+  minclass: 4 # accounts_password_pam_minclass
+  minlen: 15 # accounts_password_pam_minlen
+  retry: 3 # accounts_password_pam_pwquality_retry
+login_policy_password_profile_settings: {}
+
+login_policy_login_max_min_settings:
+  PASS_MAX_DAYS: 60
+  PASS_MIN_DAYS: 1
+  FAIL_DELAY: 4 # accounts_logon_fail_delay
+  UMASK: "077" # accounts_umask_etc_login_defs
+
+login_policy_umask: "077" # accounts_umask_etc_profile, accounts_umask_etc_bashrc
+
+login_policy_maxlogins: 10 # accounts_max_concurrent_login_sessions
+
+# pwquality.conf boolean flags
+login_policy_password_flags:
+  - enforce_for_root  # accounts_password_pam_enforce_root
+
+login_policy_pwhistory_settings:
+  remember: 5
+login_policy_pwhistory_profile_settings: {}
+
+login_policy_pwhistory_flags:
+  - enforce_for_root
+
+login_policy_authselect_profile: sssd
+login_policy_authselect_features:
+  - with-faillock
+  - with-pwhistory

@@ -20,3 +20,9 @@ services_minimize_profile_services_disabled:
   - bluetooth           # service_bluetooth_disabled
   - rpcbind             # service_rpcbind_disabled
   - nfs-server          # service_nfs_disabled
+
+login_policy_faillock_profile_settings:
+  unlock_time: 900
+
+login_policy_pwhistory_profile_settings:
+  remember: 24
